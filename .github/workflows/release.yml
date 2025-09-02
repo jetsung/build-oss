@@ -39,7 +39,7 @@ jobs:
           elif [ -f Cargo.toml ] || [ -f "${{ github.event.inputs.BUILD_DIR }}/Cargo.toml" ]; then
             echo "lang=rust" >> $GITHUB_OUTPUT
           elif [ -f manifest.json ] || [ -f src/manifest.json ] || [ -f "${{ github.event.inputs.BUILD_DIR }}/manifest.json" ]; then
-            echo "lang=crx" >> $GITHUB_OUTPUT            
+            echo "lang=browser" >> $GITHUB_OUTPUT            
           elif [ -f package.json ] || [ -f "${{ github.event.inputs.BUILD_DIR }}/package.json" ]; then
             echo "lang=node" >> $GITHUB_OUTPUT
           elif [ -f pyproject.toml ] || [ -f "${{ github.event.inputs.BUILD_DIR }}/pyproject.toml" ]; then
@@ -74,8 +74,18 @@ jobs:
 
   build-crx:
     needs: checkout
-    if: ${{ needs.checkout.outputs.lang == 'crx' }}
+    if: ${{ needs.checkout.outputs.lang == 'browser1' }}
     uses: ./.github/workflows/build-crx.yml
+    with:
+      SOURCE: ${{ github.event.inputs.SOURCE }}
+      VERSION: ${{ github.event.inputs.VERSION }}
+      BUILD_DIR: ${{ github.event.inputs.BUILD_DIR }}
+      EXTRA_ARGS: ${{ github.event.inputs.EXTRA_ARGS }}
+
+  build-xpi:
+    needs: checkout
+    if: ${{ needs.checkout.outputs.lang == 'browser' }}
+    uses: ./.github/workflows/build-xpi.yml
     with:
       SOURCE: ${{ github.event.inputs.SOURCE }}
       VERSION: ${{ github.event.inputs.VERSION }}

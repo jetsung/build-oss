@@ -1,5 +1,5 @@
 ---
-name: Build Chrome CRX Binary
+name: Build Firefox XPI Binary
 
 on  :
   workflow_call:
@@ -24,6 +24,8 @@ on  :
 jobs:
   build:
     runs-on: ubuntu-24.04
+    env:
+      HAS_AMO: ${{ secrets.AMO_JWT_ISSUER != '' && secrets.AMO_JWT_SECRET != '' }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -48,11 +50,21 @@ jobs:
         fi   
     - name: Get project name
       run: |
+        MANFEST_FILE=$(find ./repo -type f -name 'manifest.firefox.json' | head -n 1)
+        if [ -z "$MANFEST_FILE" ]; then
+          echo "manifest.firefox.json not found"
+        else
+          echo "rename manifest.firefox.json to manifest.json"
+          echo "MANFEST_FILE: $MANFEST_FILE"
+          mv "$MANFEST_FILE" "${MANFEST_FILE%.firefox.json}.json"
+        fi
+
         MANFEST_FILE=$(find ./repo -type f -name 'manifest.json' | head -n 1)
         if [ -z "$MANFEST_FILE" ]; then
           echo "manifest.json not found"
           exit 1
         fi
+
         # PROJECT_NAME=$(node -p "require('$MANFEST_FILE').name")
         # if [ "$PROJECT_NAME" != "__MSG_appName__" ]; then
         #   echo "PROJECT_NAME=$PROJECT_NAME" >> $GITHUB_ENV
@@ -61,15 +73,15 @@ jobs:
           BUILD_DIR=$(dirname "$MANFEST_FILE")
           echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_ENV
         fi
-    - name: Generate key
-      run: |
-        if [ -n "${{ secrets.CRX_PRIVATE_KEY }}" ]; then
-          echo "${ secrets.CRX_PRIVATE_KEY }" > private-key.pem
-          echo "✅ 私钥已存在"
-        else
-          openssl genrsa -out private-key.pem 2048
-          echo "✅ 私钥已生成"
-        fi
+    # - name: Generate key
+    #   run: |
+    #     if [ -n "${{ secrets.CRX_PRIVATE_KEY }}" ]; then
+    #       echo "${ secrets.CRX_PRIVATE_KEY }" > private-key.pem
+    #       echo "✅ 私钥已存在"
+    #     else
+    #       openssl genrsa -out private-key.pem 2048
+    #       echo "✅ 私钥已生成"
+    #     fi
     - name: Create Tag
       run: |
         if [ -n "${{ env.VERSION }}" ]; then
@@ -101,18 +113,34 @@ jobs:
         # copy files
         find . -maxdepth 1 \( -name "*.json" -o -name "*.js" -o -name "*.css" -o -name "*.html" \) -exec cp {} /build \;
 
-    - name: Install CRX Tool
-      run: npm install -g crx3
-    - name: Build CRX
+    - name: Install web-ext
+      run: npm install -g web-ext
+    - name: Build XPI With no AMO
+      if: ${{ !env.HAS_AMO }}
       run: |
-        crx3 -p private-key.pem -o "${{ env.TAG_NAME }}.crx" /build \
+        web-ext build \
+          --source-dir /build \
+          --artifacts-dir . \
+          --overwrite-dest \
+          --filename "${{ env.TAG_NAME }}.xpi" \
           ${{ env.EXTRA_ARGS }}
-          
+    - name: Build XPI With AMO
+      if: ${{ env.HAS_AMO }}
+      run: |
+        web-ext sign \
+          --api-key="${{ secrets.AMO_JWT_ISSUER }}" \
+          --api-secret="${{ secrets.AMO_JWT_SECRET }}" \
+          --source-dir /build \
+          --artifacts-dir . \
+          --channel=unlisted \
+          ${{ env.EXTRA_ARGS }}
+        mv *.xpi "${{ env.TAG_NAME }}.xpi"
+
     - name: Upload Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ env.TAG_NAME }}
-        files: ${{ env.TAG_NAME }}.crx
+        files: ${{ env.TAG_NAME }}.xpi
         body: |
           Date: ${{ env.SOURCE_GIT_DATE }}
           Source: [${{ env.SOURCE }}](${{ env.SOURCE_CODE_URL }})
