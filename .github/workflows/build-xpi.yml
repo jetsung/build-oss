@@ -24,8 +24,6 @@ on  :
 jobs:
   build:
     runs-on: ubuntu-24.04
-    env:
-      HAS_AMO: ${{ secrets.AMO_JWT_ISSUER != '' && secrets.AMO_JWT_SECRET != '' }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -41,6 +39,18 @@ jobs:
         echo "EXTRA_ARGS=${{ github.event.inputs.EXTRA_ARGS }}" >> $GITHUB_ENV
         PROJECT_NAME=$(basename "${{ github.event.inputs.SOURCE }}" .git)
         echo "PROJECT_NAME=$PROJECT_NAME" >> $GITHUB_ENV
+    - name: Set Build Dest Dir
+      run: |
+        rm -rf ${HOME}/build
+        mkdir -p ${HOME}/build
+        echo "DEST_DIR=${HOME}/build" >> $GITHUB_ENV
+    - name: Set AMO env
+      run: |
+        if [[ -n "${{ secrets.AMO_JWT_ISSUER }}" ]] && [[ -n "${{ secrets.AMO_JWT_SECRET }}" ]]; then
+          echo "HAS_AMO=true" >> $GITHUB_ENV
+        else
+          echo "HAS_AMO=false" >> $GITHUB_ENV
+        fi
     - name: Checkout source code
       run: |
         git clone "${{ env.SOURCE }}" repo
@@ -102,35 +112,33 @@ jobs:
     - name: Copy Build Files
       working-directory: ${{ env.BUILD_DIR }}
       run: |
-        mkdir /build
-
         # copy secret files
-        find . -mindepth 2 \( -name "*.json" -o -name "*.js" -o -name "*.css" -o -name "*.html" \) \
+        find . -mindepth 2 \( -name "*.json" -o -name "*.js" -o -name "*.css" -o -name "*.html" -o -name "*.png" -o -name "*.jpg" \) \
           -not -path "*/node_modules/*" -not -path "*/tests/*" -not -path "*/.git/*" \
           -exec dirname {} \; | sed 's|^\./||' | cut -d'/' -f1 | sort -u \
-          | xargs -I {} cp -r ./{} /build
+          | xargs -I {} cp -r ./{} "${{ env.DEST_DIR }}"
 
         # copy files
-        find . -maxdepth 1 \( -name "*.json" -o -name "*.js" -o -name "*.css" -o -name "*.html" \) -exec cp {} /build \;
+        find . -maxdepth 1 \( -name "*.json" -o -name "*.js" -o -name "*.css" -o -name "*.html" \) -exec cp {}  "${{ env.DEST_DIR }}" \;
 
     - name: Install web-ext
       run: npm install -g web-ext
     - name: Build XPI With no AMO
-      if: ${{ !env.HAS_AMO }}
+      if: ${{ env.HAS_AMO == 'false' }}
       run: |
         web-ext build \
-          --source-dir /build \
+          --source-dir "${{ env.DEST_DIR }}" \
           --artifacts-dir . \
           --overwrite-dest \
           --filename "${{ env.TAG_NAME }}.xpi" \
           ${{ env.EXTRA_ARGS }}
     - name: Build XPI With AMO
-      if: ${{ env.HAS_AMO }}
+      if: ${{ env.HAS_AMO == 'true' }}
       run: |
         web-ext sign \
           --api-key="${{ secrets.AMO_JWT_ISSUER }}" \
           --api-secret="${{ secrets.AMO_JWT_SECRET }}" \
-          --source-dir /build \
+          --source-dir "${{ env.DEST_DIR }}" \
           --artifacts-dir . \
           --channel=unlisted \
           ${{ env.EXTRA_ARGS }}

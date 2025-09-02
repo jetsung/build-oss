@@ -74,7 +74,7 @@ jobs:
 
   build-crx:
     needs: checkout
-    if: ${{ needs.checkout.outputs.lang == 'browser1' }}
+    if: ${{ needs.checkout.outputs.lang == 'browser' }}
     uses: ./.github/workflows/build-crx.yml
     with:
       SOURCE: ${{ github.event.inputs.SOURCE }}

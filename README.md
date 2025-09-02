@@ -7,3 +7,8 @@
 - Go
 - Rust
 - Chrome CRX
+- Firefox XPI
+
+## TODO
+- [ ] Python
+- [ ] NodeJS

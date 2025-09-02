@@ -39,6 +39,11 @@ jobs:
         echo "EXTRA_ARGS=${{ github.event.inputs.EXTRA_ARGS }}" >> $GITHUB_ENV
         PROJECT_NAME=$(basename "${{ github.event.inputs.SOURCE }}" .git)
         echo "PROJECT_NAME=$PROJECT_NAME" >> $GITHUB_ENV
+    - name: Set Build Dest Dir
+      run: |
+        rm -rf ${HOME}/build
+        mkdir -p ${HOME}/build
+        echo "DEST_DIR=${HOME}/build" >> $GITHUB_ENV
     - name: Checkout source code
       run: |
         git clone "${{ env.SOURCE }}" repo
@@ -90,23 +95,20 @@ jobs:
     - name: Copy Build Files
       working-directory: ${{ env.BUILD_DIR }}
       run: |
-        mkdir /build
-
         # copy secret files
-        find . -mindepth 2 \( -name "*.json" -o -name "*.js" -o -name "*.css" -o -name "*.html" \) \
+        find . -mindepth 2 \( -name "*.json" -o -name "*.js" -o -name "*.css" -o -name "*.html" -o -name "*.png" -o -name "*.jpg" \) \
           -not -path "*/node_modules/*" -not -path "*/tests/*" -not -path "*/.git/*" \
           -exec dirname {} \; | sed 's|^\./||' | cut -d'/' -f1 | sort -u \
-          | xargs -I {} cp -r ./{} /build
+          | xargs -I {} cp -r ./{} "${{ env.DEST_DIR }}"
 
         # copy files
-        find . -maxdepth 1 \( -name "*.json" -o -name "*.js" -o -name "*.css" -o -name "*.html" \) -exec cp {} /build \;
+        find . -maxdepth 1 \( -name "*.json" -o -name "*.js" -o -name "*.css" -o -name "*.html" \) -exec cp {} "${{ env.DEST_DIR }}" \;
 
     - name: Install CRX Tool
       run: npm install -g crx3
     - name: Build CRX
       run: |
-        crx3 -p private-key.pem -o "${{ env.TAG_NAME }}.crx" /build \
-          ${{ env.EXTRA_ARGS }}
+        crx3 -p private-key.pem -o "${{ env.TAG_NAME }}.crx" "${{ env.DEST_DIR }}" ${{ env.EXTRA_ARGS }}
           
     - name: Upload Release
       uses: softprops/action-gh-release@v1
