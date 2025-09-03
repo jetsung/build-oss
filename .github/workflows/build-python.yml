@@ -1,5 +1,5 @@
 ---
-name: Build Go Binary
+name: Build Python Binary
 
 on  :
   workflow_call:
@@ -23,6 +23,7 @@ on  :
 
 jobs:
   build:
+    # if: false
     runs-on: ubuntu-24.04
     steps:
     - name: Checkout
@@ -33,36 +34,32 @@ jobs:
         echo "VERSION=${{ github.event.inputs.VERSION }}" >> $GITHUB_ENV
         echo "BUILD_DIR=${{ github.event.inputs.BUILD_DIR }}" >> $GITHUB_ENV
         echo "EXTRA_ARGS=${{ github.event.inputs.EXTRA_ARGS }}" >> $GITHUB_ENV
-        PROJECT_NAME=$(basename "${{ github.event.inputs.SOURCE }}" .git)
-        echo "PROJECT_NAME=$PROJECT_NAME" >> $GITHUB_ENV
     - name: Checkout source code
       run: |
         git clone "${{ env.SOURCE }}" repo
         cd repo
         if [ -n "${{ env.VERSION }}" ]; then
           git checkout "${{ env.VERSION }}"
-        fi    
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: ^1.24
-        check-latest: true
-    - name: Set up GoReleaser
-      uses: goreleaser/goreleaser-action@v6
-      with:
-        install-only: true
-    - name: Build with GoReleaser
-      run: |
-        cd repo
-        cp ../.goreleaser.yaml .
-        if [ -n "${{ env.VERSION }}" ]; then
-          goreleaser release --clean --skip=validate,publish
-        else
-          goreleaser release --snapshot --clean --skip=validate,publish
         fi
-    - name: Check files
+    - name: Get project name
+      working-directory: ./repo
       run: |
-        ls -al repo/dist
+        PROJECT_NAME=$(grep name pyproject.toml | awk -F'"' '{print $2}' | head -n 1)
+        echo "PROJECT_NAME=$PROJECT_NAME" >> $GITHUB_ENV          
+    # - name: Install uv
+    #   uses: astral-sh/setup-uv@v6
+    - name: Install uv with sh (DEBUG)
+      run: |
+        curl -L s.fx4.cn/uv | bash
+        echo "source $HOME/.local/bin/env" >> $GITHUB_ENV
+    - name: Check uv
+      run: |
+        uv --version
+    - name: Build Python Binary
+      working-directory: ./repo
+      run: |
+        uv sync
+        uv build ${{ env.EXTRA_ARGS }}
     - name: Create Tag
       run: |
         if [ -n "${{ env.VERSION }}" ]; then
@@ -79,14 +76,14 @@ jobs:
         echo "GIT_REV=$GIT_REV" >> $GITHUB_ENV
         SOURCE_URL=${{ env.SOURCE }}
         echo "SOURCE_CODE_URL=${SOURCE_URL%.git}/tree/${GIT_REV}" >> $GITHUB_ENV
-        echo "SOURCE_GIT_DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
+        echo "SOURCE_GIT_DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV  
     - name: Upload Release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ env.TAG_NAME }}
         files: |
           repo/dist/*.tar.gz
-          repo/dist/*.zip
+          repo/dist/*.whl
         body: |
           Date: ${{ env.SOURCE_GIT_DATE }}
           Source: [${{ env.SOURCE }}](${{ env.SOURCE_CODE_URL }})

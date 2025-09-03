@@ -72,6 +72,16 @@ jobs:
       BUILD_DIR: ${{ github.event.inputs.BUILD_DIR }}
       EXTRA_ARGS: ${{ github.event.inputs.EXTRA_ARGS }}
 
+  build-py:
+    needs: checkout
+    if: ${{ needs.checkout.outputs.lang == 'python' }}
+    uses: ./.github/workflows/build-python.yml
+    with:
+      SOURCE: ${{ github.event.inputs.SOURCE }}
+      VERSION: ${{ github.event.inputs.VERSION }}
+      BUILD_DIR: ${{ github.event.inputs.BUILD_DIR }}
+      EXTRA_ARGS: ${{ github.event.inputs.EXTRA_ARGS }}
+
   build-crx:
     needs: checkout
     if: ${{ needs.checkout.outputs.lang == 'browser' }}

@@ -4,11 +4,9 @@
 
 ## 支持项目
 
-- Go
-- Rust
-- Chrome CRX
-- Firefox XPI
-
-## TODO
-- [ ] Python
+- [x] Go
+- [x] Rust
+- [x] Chrome CRX
+- [x] Firefox XPI
+- [x] Python
 - [ ] NodeJS
