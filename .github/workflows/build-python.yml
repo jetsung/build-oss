@@ -46,12 +46,12 @@ jobs:
       run: |
         PROJECT_NAME=$(grep name pyproject.toml | awk -F'"' '{print $2}' | head -n 1)
         echo "PROJECT_NAME=$PROJECT_NAME" >> $GITHUB_ENV          
-    # - name: Install uv
-    #   uses: astral-sh/setup-uv@v6
-    - name: Install uv with sh (DEBUG)
-      run: |
-        curl -L s.fx4.cn/uv | bash
-        echo "source $HOME/.local/bin/env" >> $GITHUB_ENV
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
+    # - name: Install uv with sh (DEBUG)
+    #   run: |
+    #     curl -L s.fx4.cn/uv | bash
+    #     echo "source $HOME/.local/bin/env" >> $GITHUB_ENV
     - name: Check uv
       run: |
         uv --version

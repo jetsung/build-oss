@@ -84,14 +84,7 @@ jobs:
         fi
         git tag "$TAG_NAME"
         echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
-    - name: Get short hash
-      working-directory: ./repo
-      run: |
-        GIT_REV=$(git rev-parse --short HEAD)
-        echo "GIT_REV=$GIT_REV" >> $GITHUB_ENV
-        SOURCE_URL=${{ env.SOURCE }}
-        echo "SOURCE_CODE_URL=${SOURCE_URL%.git}/tree/${GIT_REV}" >> $GITHUB_ENV
-        echo "SOURCE_GIT_DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
+
     - name: Copy Build Files
       working-directory: ${{ env.BUILD_DIR }}
       run: |
@@ -102,14 +95,23 @@ jobs:
           | xargs -I {} cp -r ./{} "${{ env.DEST_DIR }}"
 
         # copy files
-        find . -maxdepth 1 \( -name "*.json" -o -name "*.js" -o -name "*.css" -o -name "*.html" \) -exec cp {} "${{ env.DEST_DIR }}" \;
+        find . -maxdepth 1 \( -name "*.json" -o -name "*.js" -o -name "*.css" -o -name "*.html" -o -name "*.png" -o -name "*.jpg" \) \
+          -exec cp {} "${{ env.DEST_DIR }}" \;
 
     - name: Install CRX Tool
       run: npm install -g crx3
     - name: Build CRX
       run: |
         crx3 -p private-key.pem -o "${{ env.TAG_NAME }}.crx" "${{ env.DEST_DIR }}" ${{ env.EXTRA_ARGS }}
-          
+
+    - name: Get short hash
+      working-directory: ./repo
+      run: |
+        GIT_REV=$(git rev-parse --short HEAD)
+        echo "GIT_REV=$GIT_REV" >> $GITHUB_ENV
+        SOURCE_URL=${{ env.SOURCE }}
+        echo "SOURCE_CODE_URL=${SOURCE_URL%.git}/tree/${GIT_REV}" >> $GITHUB_ENV
+        echo "SOURCE_GIT_DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV          
     - name: Upload Release
       uses: softprops/action-gh-release@v2
       with:
