@@ -83,6 +83,30 @@ jobs:
           BUILD_DIR=$(dirname "$MANFEST_FILE")
           echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_ENV
         fi
+
+        # Set manifest path
+        echo "MANFEST_FILE=$MANFEST_FILE" >> $GITHUB_ENV
+    - name: Fix manifest.json
+      run: |
+        node -e "
+          const fs = require('fs');
+          const manifestPath = '${{ env.MANFEST_FILE }}';
+          const ff = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+
+          if (ff.background && ff.background.service_worker) {
+            ff.background = { scripts: [ff.background.service_worker] };
+          }
+
+          ff.browser_specific_settings = ff.browser_specific_settings || {};
+          ff.browser_specific_settings.gecko = Object.assign({}, ff.browser_specific_settings.gecko, {
+            id: '${{ env.PROJECT_NAME }}@jetsung.com',
+            strict_min_version: '128.0'
+          });
+
+          fs.writeFileSync(manifestPath, JSON.stringify(ff, null, 2));
+          console.log('manifest.json has been fixed.');
+        "
+
     # - name: Generate key
     #   run: |
     #     if [ -n "${{ secrets.CRX_PRIVATE_KEY }}" ]; then
