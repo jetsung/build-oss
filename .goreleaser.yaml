@@ -7,16 +7,16 @@
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
 
-version     : 2
+version  : 2
 
-before      :
+before   :
   hooks:
     # You may remove this if you don't use go modules.
   - go mod tidy
     # you may remove this if you don't need go generate
   - go generate ./...
 
-builds      :
+builds   :
 - env:
   - CGO_ENABLED=0
   goos:
@@ -25,12 +25,11 @@ builds      :
   - darwin
   goarch:
   - amd64
-      # - "386"
-      # - "arm64"
-      # - "loong64"
-      # - "riscv64"
+  - arm64
+  - loong64
+  - riscv64
 
-archives    :
+archives :
 - formats: [tar.gz]
     # this name template makes the OS and Arch compatible with the results of `uname`.
   name_template: >-
@@ -47,17 +46,16 @@ archives    :
   - goos: windows
     formats: [zip]
 
-changelog   :
+changelog:
   sort: asc
   filters:
     exclude:
     - '^docs:'
     - '^test:'
 
-release     :
+release  :
   footer: >2-
 
     ---
 
     Power by [OSS-Binaries](https://github.com/jetsung/oss-binaries).
-skip_publish: true

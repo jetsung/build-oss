@@ -54,7 +54,9 @@ jobs:
     - name: Build with GoReleaser
       run: |
         cd repo
-        cp ../.goreleaser.yaml .
+        if [[ ! -f "./.goreleaser.yaml" ]]; then
+          cp ../.goreleaser.yaml .
+        fi
         if [ -n "${{ env.VERSION }}" ]; then
           goreleaser release --clean --skip=validate,publish
         else
