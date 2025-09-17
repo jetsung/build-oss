@@ -273,6 +273,7 @@ jobs:
         done
     - name: Get short hash
       working-directory: ./repo
+      shell: bash
       run: |
         GIT_REV=$(git rev-parse --short HEAD)
         echo "GIT_REV=$GIT_REV" >> $GITHUB_ENV
