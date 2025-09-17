@@ -1,5 +1,5 @@
 ---
-name: OSS Binary Builder
+name: Build OSS
 
 on  :
   workflow_dispatch:

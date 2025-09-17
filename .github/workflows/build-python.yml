@@ -86,6 +86,7 @@ jobs:
           repo/dist/*.whl
         body: |
           Date: ${{ env.SOURCE_GIT_DATE }}
+          Platform: **Python**
           Source: [${{ env.SOURCE }}](${{ env.SOURCE_CODE_URL }})
           Publish by [Jetsung Chan](https://github.com/jetsung)
         append_body: false

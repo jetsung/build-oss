@@ -150,6 +150,7 @@ jobs:
           --overwrite-dest \
           --filename "${{ env.TAG_NAME }}.xpi" \
           ${{ env.EXTRA_ARGS }}
+        mv *.xpi "${{ env.TAG_NAME }}.xpi"
     - name: Build XPI With AMO
       if: ${{ env.HAS_AMO == 'true' }}
       run: |
@@ -177,6 +178,7 @@ jobs:
         files: ${{ env.TAG_NAME }}.xpi
         body: |
           Date: ${{ env.SOURCE_GIT_DATE }}
+          Platform: **Browser Extension**
           Source: [${{ env.SOURCE }}](${{ env.SOURCE_CODE_URL }})
           Publish by [Jetsung Chan](https://github.com/jetsung)
         append_body: false

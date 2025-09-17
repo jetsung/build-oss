@@ -1,6 +1,6 @@
-# OSS Binaries
+# Build OSS
 
-构建开源项目为二进制文件
+利用 GitHub Action 编译开源项目，并发布到 Release。
 
 ## 支持项目
 

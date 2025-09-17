@@ -23,6 +23,7 @@ on  :
 
 jobs:
   build:
+    # if: false
     runs-on: ubuntu-24.04
     steps:
     - name: Checkout
@@ -119,6 +120,7 @@ jobs:
         files: ${{ env.TAG_NAME }}.crx
         body: |
           Date: ${{ env.SOURCE_GIT_DATE }}
+          Platform: **Browser Extension**
           Source: [${{ env.SOURCE }}](${{ env.SOURCE_CODE_URL }})
           Publish by [Jetsung Chan](https://github.com/jetsung)
         append_body: false
