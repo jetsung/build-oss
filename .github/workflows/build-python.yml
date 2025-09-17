@@ -76,7 +76,7 @@ jobs:
         echo "GIT_REV=$GIT_REV" >> $GITHUB_ENV
         SOURCE_URL=${{ env.SOURCE }}
         echo "SOURCE_CODE_URL=${SOURCE_URL%.git}/tree/${GIT_REV}" >> $GITHUB_ENV
-        echo "SOURCE_GIT_DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV  
+        echo "SOURCE_GIT_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_ENV
     - name: Upload Release
       uses: softprops/action-gh-release@v2
       with:
