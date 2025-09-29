@@ -51,16 +51,12 @@ jobs:
       uses: goreleaser/goreleaser-action@v6
       with:
         install-only: true
-        version: ~> v2
     - name: Build with GoReleaser
       run: |
         cd repo
         if [[ ! -f "./.goreleaser.yaml" ]]; then
           cp ../.goreleaser.yaml .
         fi
-        goreleaser --version
-        ls -1
-        cat ./.goreleaser.yaml
         if [ -n "${{ env.VERSION }}" ]; then
           goreleaser release --clean --skip=validate,publish
         else
