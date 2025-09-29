@@ -1,7 +1,7 @@
 ---
-name: Build OSS
+name: Build-OSS
 
-on  :
+on:
   workflow_dispatch:
     inputs:
       SOURCE:
@@ -19,6 +19,7 @@ on  :
       EXTRA_ARGS:
         description: 扩展参数（可选，默认无）
         required: false
+
 
 jobs:
   checkout:
@@ -38,12 +39,24 @@ jobs:
             echo "lang=golang" >> $GITHUB_OUTPUT
           elif [ -f Cargo.toml ] || [ -f "${{ github.event.inputs.BUILD_DIR }}/Cargo.toml" ]; then
             echo "lang=rust" >> $GITHUB_OUTPUT
-          elif [ -f manifest.json ] || [ -f src/manifest.json ] || [ -f "${{ github.event.inputs.BUILD_DIR }}/manifest.json" ]; then
-            echo "lang=browser" >> $GITHUB_OUTPUT            
-          elif [ -f package.json ] || [ -f "${{ github.event.inputs.BUILD_DIR }}/package.json" ]; then
-            echo "lang=node" >> $GITHUB_OUTPUT
           elif [ -f pyproject.toml ] || [ -f "${{ github.event.inputs.BUILD_DIR }}/pyproject.toml" ]; then
             echo "lang=python" >> $GITHUB_OUTPUT
+          elif [ -f manifest.json ] || [ -f src/manifest.json ] || [ -f "${{ github.event.inputs.BUILD_DIR }}/manifest.json" ]; then
+            if [ -f "manifest.json" ]; then
+              manifest_file="manifest.json"
+            elif [ -f "src/manifest.json" ]; then
+              manifest_file="src/manifest.json"
+            elif [ -f "${{ github.event.inputs.BUILD_DIR }}/$manifest_file" ]; then
+              manifest_file="${{ github.event.inputs.BUILD_DIR }}/$manifest_file"
+            fi
+            manifest_version=$(grep 'manifest_version' "$manifest_file" | cut -d':' -f2 | tr -d ' ,')
+            if [ -n "$manifest_version" ]; then
+              echo "lang=browser" >> $GITHUB_OUTPUT            
+            elif [ -f package.json ] || [ -f "${{ github.event.inputs.BUILD_DIR }}/package.json" ]; then
+              echo "lang=nodejs" >> $GITHUB_OUTPUT
+            fi
+          elif [ -f package.json ] || [ -f "${{ github.event.inputs.BUILD_DIR }}/package.json" ]; then
+            echo "lang=nodejs" >> $GITHUB_OUTPUT
           else
             echo "lang=unknown" >> $GITHUB_OUTPUT
           fi
@@ -96,6 +109,16 @@ jobs:
     needs: checkout
     if: ${{ needs.checkout.outputs.lang == 'browser' }}
     uses: ./.github/workflows/build-xpi.yml
+    with:
+      SOURCE: ${{ github.event.inputs.SOURCE }}
+      VERSION: ${{ github.event.inputs.VERSION }}
+      BUILD_DIR: ${{ github.event.inputs.BUILD_DIR }}
+      EXTRA_ARGS: ${{ github.event.inputs.EXTRA_ARGS }}
+
+  build-node:
+    needs: checkout
+    if: ${{ needs.checkout.outputs.lang == 'nodejs' }}
+    uses: ./.github/workflows/build-node.yml
     with:
       SOURCE: ${{ github.event.inputs.SOURCE }}
       VERSION: ${{ github.event.inputs.VERSION }}

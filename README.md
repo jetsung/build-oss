@@ -9,4 +9,4 @@
 - [x] Chrome CRX
 - [x] Firefox XPI
 - [x] Python
-- [ ] NodeJS
+- [x] NodeJS

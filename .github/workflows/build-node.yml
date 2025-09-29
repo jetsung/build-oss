@@ -1,5 +1,5 @@
 ---
-name: Build Go Binary
+name: Build NodeJS Binary
 
 on:
   workflow_call:
@@ -23,10 +23,15 @@ on:
 
 jobs:
   build:
+    # if: false
     runs-on: ubuntu-24.04
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+    - name: Setup NodeJS
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
     - name: Set env
       run: |
         echo "SOURCE=${{ github.event.inputs.SOURCE }}" >> $GITHUB_ENV
@@ -41,30 +46,22 @@ jobs:
         cd repo
         if [ -n "${{ env.VERSION }}" ]; then
           git checkout "${{ env.VERSION }}"
-        fi    
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: ^1.25
-        check-latest: true
-    - name: Set up GoReleaser
-      uses: goreleaser/goreleaser-action@v6
-      with:
-        install-only: true
-    - name: Build with GoReleaser
+        fi   
+    - name: Get project name
       run: |
-        cd repo
-        if [[ ! -f "./.goreleaser.yaml" ]]; then
-          cp ../.goreleaser.yaml .
+        PACKAGE_FILE=$(find ./repo -type f -name 'package.json' | head -n 1)
+        if [ -z "$PACKAGE_FILE" ]; then
+          echo "package.json not found"
+          exit 1
         fi
-        if [ -n "${{ env.VERSION }}" ]; then
-          goreleaser release --clean --skip=validate,publish
-        else
-          goreleaser release --snapshot --clean --skip=validate,publish
+        PROJECT_NAME=$(node -p "require('$PACKAGE_FILE').name")
+        if [ -n "$PROJECT_NAME" ]; then
+          echo "PROJECT_NAME=$PROJECT_NAME" >> $GITHUB_ENV
         fi
-    - name: Check files
-      run: |
-        ls -al repo/dist
+        if [ -z "${{ env.BUILD_DIR }}" ]; then
+          BUILD_DIR=$(dirname "$PACKAGE_FILE")
+          echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_ENV
+        fi
     - name: Create Tag
       run: |
         if [ -n "${{ env.VERSION }}" ]; then
@@ -74,6 +71,17 @@ jobs:
         fi
         git tag "$TAG_NAME"
         echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+
+    - name: Build
+      working-directory: ./repo
+      run: |
+        npm install
+        npm run build
+    - name: Compress
+      run: |
+        mv repo/dist "${{ env.PROJECT_NAME }}"
+        tar -zcvf "${{ env.PROJECT_NAME }}.tar.gz" "${{ env.PROJECT_NAME }}"
+
     - name: Get short hash
       working-directory: ./repo
       run: |
@@ -86,12 +94,10 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ env.TAG_NAME }}
-        files: |
-          repo/dist/*.tar.gz
-          repo/dist/*.zip
+        files: ${{ env.PROJECT_NAME }}.tar.gz
         body: |
           Date: ${{ env.SOURCE_GIT_DATE }}
-          Platform: **Go**
+          Platform: **NodeJS**
           Source: [${{ env.SOURCE }}](${{ env.SOURCE_CODE_URL }})
           Publish by [Jetsung Chan](https://github.com/jetsung)
         append_body: false
