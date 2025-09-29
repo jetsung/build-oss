@@ -58,6 +58,9 @@ jobs:
         if [[ ! -f "./.goreleaser.yaml" ]]; then
           cp ../.goreleaser.yaml .
         fi
+        goreleaser --version
+        ls -1
+        cat ./.goreleaser.yaml
         if [ -n "${{ env.VERSION }}" ]; then
           goreleaser release --clean --skip=validate,publish
         else

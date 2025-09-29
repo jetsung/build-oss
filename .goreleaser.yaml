@@ -21,13 +21,13 @@ builds:
   - CGO_ENABLED=0
   goos:
   - linux
-  - windows
-  - darwin
+  # - windows
+  # - darwin
   goarch:
   - amd64
-  - arm64
-  - loong64
-  - riscv64
+  # - arm64
+  # - loong64
+  # - riscv64
 
 archives:
 - formats: [tar.gz]
