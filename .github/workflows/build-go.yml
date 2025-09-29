@@ -1,7 +1,7 @@
 ---
 name: Build Go Binary
 
-on  :
+on:
   workflow_call:
     inputs:
       SOURCE:
@@ -45,12 +45,13 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: ^1.24
+        go-version: ^1.25
         check-latest: true
     - name: Set up GoReleaser
       uses: goreleaser/goreleaser-action@v6
       with:
         install-only: true
+        version: ~> v2
     - name: Build with GoReleaser
       run: |
         cd repo
